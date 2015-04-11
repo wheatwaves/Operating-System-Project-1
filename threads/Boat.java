@@ -4,7 +4,14 @@ import nachos.ag.BoatGrader;
 public class Boat
 {
     static BoatGrader bg;
-    
+    static public boolean Boat_in_Oahu;
+    static public boolean child_in_boat;
+    static public int child_number_Molokai;
+    static public int adult_number_Oahu;
+    static public int number;
+    static public Lock lock;
+    static Condition2 child_Molokai, child_Oahu, adult_Oahu;
+	
     public static void selfTest()
     {
 	BoatGrader b = new BoatGrader();
@@ -24,40 +31,98 @@ public class Boat
 	// Store the externally generated autograder in a class
 	// variable to be accessible by children.
 	bg = b;
-
+ 	Boat_in_Oahu = true;
+    	child_in_boat = false;
+    	child_number_Molokai = 0;
+    	adult_number_Oahu = adults;
+    	number = adults+children;
 	// Instantiate global variables here
 	
 	// Create threads here. See section 3.4 of the Nachos for Java
 	// Walkthrough linked from the projects page.
 
-	Runnable r = new Runnable() {
-	    public void run() {
-                SampleItinerary();
-            }
-        };
-        KThread t = new KThread(r);
-        t.setName("Sample Boat Thread");
-        t.fork();
-
+	Runnable a = new Runnable()
+	{
+		public void run()
+		{
+			AdultItinerary();
+		}
+	};
+	Runnable c = new Runnable()
+	{
+		public void run()
+		{
+			ChildItinerary();
+		}
+	};
+	KThread adult = new KThread(a);
+	KThread child = new KThread(c);
+	lock = new Lock();
+	child_Molokai = new Condition2(lock);
+	child_Oahu = new Condition2(lock);
+	adult_Oahu = new Condition2(lock);
+	for (int i = 0; i < adults; i++)
+		adult.fork();
+	for (int i = 0; i < children; i++)
+		child.fork();
     }
 
     static void AdultItinerary()
     {
-	bg.initializeAdult(); //Required for autograder interface. Must be the first thing called.
-	//DO NOT PUT ANYTHING ABOVE THIS LINE. 
-
-	/* This is where you should put your solutions. Make calls
-	   to the BoatGrader to show that it is synchronized. For
-	   example:
-	       bg.AdultRowToMolokai();
-	   indicates that an adult has rowed the boat across to Molokai
-	*/
+	bg.initializeAdult(); 
+	lock.acquire();
+	if (!(Boat_in_Oahu && child_number_Molokai > 0))
+		adult_Oahu.sleep();
+	bg.AdultRowToMolokai();
+	Boat_in_Oahu = false;
+	number --;
+	adult_number_Oahu--;
+	child_Molokai.wake();
+	lock.release();
     }
 
     static void ChildItinerary()
     {
-	bg.initializeChild(); //Required for autograder interface. Must be the first thing called.
-	//DO NOT PUT ANYTHING ABOVE THIS LINE. 
+	bg.initializeChild(); 
+	boolean self_in_Oahu = true;
+	lock.acquire();
+	while (number>0)
+	{
+		if (!self_in_Oahu)
+		{
+			bg.ChildRowToOahu();
+			Boat_in_Oahu = true;
+			child_number_Molokai --;
+			number++;
+			if (child_number_Molokai>0 && adult_number_Oahu>0)
+				adult_Oahu.wake();
+			else child_Oahu.wake();
+			child_Oahu.sleep();
+		}
+		else
+		{
+			if (!Boat_in_Oahu)
+				child_Oahu.sleep();
+			if (!child_in_boat)
+			{
+				bg.ChildRowToOahu();
+				number--;
+				child_number_Molokai++;
+				child_in_boat=true;
+				child_Oahu.wake();
+				child_Molokai.sleep();
+			}
+			else
+			{
+				bg.ChildRowToOahu();
+				number--;
+				child_number_Molokai++;
+				child_in_boat=false;
+				Boat_in_Oahu = false;
+				child_Molokai.wake();
+			}
+		}
+	}
     }
 
     static void SampleItinerary()

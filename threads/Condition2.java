@@ -1,7 +1,6 @@
 package nachos.threads;
 
 import nachos.machine.*;
-
 /**
  * An implementation of condition variables that disables interrupt()s for
  * synchronization.
@@ -71,5 +70,5 @@ public class Condition2 {
 	Machine.interrupt().restore(status);
     }
     private Lock conditionLock;
-    private LinkedList<KThread> waitQueue;
+    private ThreadQueue waitQueue = ThreadedKernel.scheduler.newThreadQueue(false);
 }
