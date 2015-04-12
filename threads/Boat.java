@@ -17,11 +17,11 @@ public class Boat
     {
 	BoatGrader b = new BoatGrader();
 	
-	//System.out.println("\n ***Testing Boats with only 2 children***");
-	//begin(0, 2, b);
+	System.out.println("\n ***Testing Boats with only 2 children***");
+	begin(1, 2, b);
 
-	System.out.println("\n ***Testing Boats with 2 children, 1 adult***");
-  	begin(50, 60, b);
+	//System.out.println("\n ***Testing Boats with 2 children, 1 adult***");
+  	//begin(50, 60, b);
 
   	//System.out.println("\n ***Testing Boats with 3 children, 3 adults***");
   	//begin(3, 3, b);
@@ -67,10 +67,10 @@ public class Boat
 	for (int i = 0; i < children; i++)
 		new KThread(c).setName("Child"+i).fork();
 	while (number > 0) KThread.currentThread().yield();
-	//lock.acquire();
-	//child_Molokai.wakeAll();
-	//lock.release();
-	//while (cc > 0) KThread.currentThread().yield();
+	lock.acquire();
+	child_Molokai.wakeAll();
+	lock.release();
+	while (cc > 0) KThread.currentThread().yield();
     }
 
     static void AdultItinerary()

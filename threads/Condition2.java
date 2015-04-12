@@ -33,25 +33,50 @@ public class Condition2 {
 	    CTest.sleep();
 	    System.out.println(which + "running");
 	    lock.release();
+	    n--;
+	}
+	private int which;
+    }
+    private static class PingTest2 implements Runnable {
+	PingTest2(int which) {
+	    this.which = which;
+	}
+	public void run() {
+	    lock.acquire();
+	    System.out.println(which + "running");
+	    CTest.sleep();
+	    System.out.println(which + "running");
+	    lock.release();
+	    n--;
 	}
 	private int which;
     }
     public static void selfTest(){
 	System.out.println("---Condition2---");
+	System.out.println("---test1---");
 	lock = new Lock();
 	CTest = new Condition2(lock);
-	KThread thread;
-	for (int i = 0; i < 5; i++){
+	n = 5;
+	for (int i = 0; i < n; i++){
 		new KThread(new PingTest(i)).fork();
 	}
-	thread = new KThread(new PingTest(6));
-	thread.fork();
-	new PingTest(5).run();
+	while (n > 1) KThread.currentThread().yield();
+	lock.acquire();
+	CTest.wake();
+	lock.release();
+	while (n > 0) KThread.currentThread().yield();
+	System.out.println("---test2---");
+	lock = new Lock();
+	CTest = new Condition2(lock);
+	n = 5;
+	for (int i = 0; i < n; i++){
+		new KThread(new PingTest2(i)).fork();
+	}
+	System.out.println("wakeAll");
 	lock.acquire();
 	CTest.wakeAll();
 	lock.release();
-	thread.join();
-	
+	while (n > 0) KThread.currentThread().yield();
     }
     /**
      * Atomically release the associated lock and go to sleep on this condition
@@ -99,6 +124,7 @@ public class Condition2 {
 	}
 	Machine.interrupt().restore(status);
     }
+    private static int n;
     private static Lock lock;
     private static Condition2 CTest;
     private Lock conditionLock;
