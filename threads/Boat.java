@@ -10,6 +10,7 @@ public class Boat
     static public int adult_number_Oahu;
     static public int number;
     static public Lock lock;
+    static public int cc;
     static Condition2 child_Molokai, child_Oahu, adult_Oahu;
 	
     public static void selfTest()
@@ -19,15 +20,16 @@ public class Boat
 	System.out.println("\n ***Testing Boats with only 2 children***");
 	begin(0, 2, b);
 
-//	System.out.println("\n ***Testing Boats with 2 children, 1 adult***");
-//  	begin(1, 2, b);
+	System.out.println("\n ***Testing Boats with 2 children, 1 adult***");
+  	begin(1, 2, b);
 
-//  	System.out.println("\n ***Testing Boats with 3 children, 3 adults***");
-//  	begin(3, 3, b);
+  	System.out.println("\n ***Testing Boats with 3 children, 3 adults***");
+  	begin(3, 3, b);
     }
 
     public static void begin( int adults, int children, BoatGrader b )
     {
+
 	// Store the externally generated autograder in a class
 	// variable to be accessible by children.
 	bg = b;
@@ -36,6 +38,7 @@ public class Boat
     	child_number_Molokai = 0;
     	adult_number_Oahu = adults;
     	number = adults+children;
+	cc = children;
 	// Instantiate global variables here
 	
 	// Create threads here. See section 3.4 of the Nachos for Java
@@ -55,16 +58,20 @@ public class Boat
 			ChildItinerary();
 		}
 	};
-	KThread adult = new KThread(a);
-	KThread child = new KThread(c);
 	lock = new Lock();
 	child_Molokai = new Condition2(lock);
 	child_Oahu = new Condition2(lock);
 	adult_Oahu = new Condition2(lock);
 	for (int i = 0; i < adults; i++)
-		adult.fork();
+		new KThread(a).fork();
 	for (int i = 0; i < children; i++)
-		child.fork();
+		new KThread(c).setName("Child"+i).fork();
+	while (number > 0) KThread.currentThread().yield();
+	lock.acquire();
+	child_Molokai.wakeAll();
+	child_Oahu.wakeAll();
+	lock.release();
+	while (cc > 0) KThread.currentThread().yield();
     }
 
     static void AdultItinerary()
@@ -88,10 +95,12 @@ public class Boat
 	lock.acquire();
 	while (number>0)
 	{
+		
 		if (!self_in_Oahu)
 		{
 			bg.ChildRowToOahu();
 			Boat_in_Oahu = true;
+			self_in_Oahu = true;
 			child_number_Molokai --;
 			number++;
 			if (child_number_Molokai>0 && adult_number_Oahu>0)
@@ -102,27 +111,36 @@ public class Boat
 		else
 		{
 			if (!Boat_in_Oahu)
+			{
 				child_Oahu.sleep();
+			}
 			if (!child_in_boat)
 			{
-				bg.ChildRowToOahu();
+				bg.ChildRowToMolokai();
 				number--;
 				child_number_Molokai++;
 				child_in_boat=true;
+				self_in_Oahu = false;
 				child_Oahu.wake();
 				child_Molokai.sleep();
+				if (number == 0) break;
 			}
 			else
 			{
-				bg.ChildRowToOahu();
+				bg.ChildRowToMolokai();
 				number--;
 				child_number_Molokai++;
 				child_in_boat=false;
 				Boat_in_Oahu = false;
+				self_in_Oahu = false;
 				child_Molokai.wake();
+				child_Molokai.sleep();
+				if (number == 0) break;
 			}
 		}
 	}
+	cc--;
+	lock.release();
     }
 
     static void SampleItinerary()

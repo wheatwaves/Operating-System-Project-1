@@ -92,7 +92,7 @@ public class Condition2 {
 	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
 	boolean status = Machine.interrupt().disable();
 	KThread thread = waitQueue.nextThread();
-	if (thread != null)
+	while (thread != null)
 	{
 		thread.ready();
 		thread = waitQueue.nextThread();
