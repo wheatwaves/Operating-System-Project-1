@@ -413,8 +413,15 @@ public class KThread {
     public static void selfTest() {
 	Lib.debug(dbgThread, "Enter KThread.selfTest");
 	System.out.println("---KThread.join()---");
+	System.out.println("---test1---");
 	KThread thread = new KThread(new PingTest(1));
 	thread.fork();
+	thread.join();
+	new PingTest(0).run();
+	System.out.println("---test2---");
+	thread = new KThread(new PingTest(1));
+	thread.fork();
+	KThread.currentThread().yield();
 	thread.join();
 	new PingTest(0).run();
     }

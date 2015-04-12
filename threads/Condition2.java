@@ -44,6 +44,7 @@ public class Condition2 {
 	public void run() {
 	    lock.acquire();
 	    System.out.println(which + "running");
+	    n--;
 	    CTest.sleep();
 	    System.out.println(which + "running");
 	    lock.release();
@@ -72,7 +73,9 @@ public class Condition2 {
 	for (int i = 0; i < n; i++){
 		new KThread(new PingTest2(i)).fork();
 	}
+	while (n > 0) KThread.currentThread().yield();
 	System.out.println("wakeAll");
+	n = 5;
 	lock.acquire();
 	CTest.wakeAll();
 	lock.release();
