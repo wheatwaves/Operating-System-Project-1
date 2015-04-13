@@ -1,6 +1,7 @@
 package nachos.threads;
 
 import nachos.machine.*;
+import java.util.Random;
 
 /**
  * A <i>communicator</i> allows threads to synchronously exchange 32-bit
@@ -19,7 +20,126 @@ public class Communicator {
         SpeakerCondition=new Condition(lock);
         ListenerCondition= new Condition(lock);
     }
+    public static void selfTest(){
+	System.out.println("---Communicator---");
+	System.out.println("---test1---");
+	n = 2;
+	C = new Communicator();
+	new KThread(new Runnable(){
+		public void run(){
+			int a = random.nextInt();
+			System.out.println("speaker: "+a);
+			C.speak(a);
+			n--;
+		}
+	}).fork();
+	new KThread(new Runnable(){
+		public void run(){
+			System.out.println("listener: "+C.listen());
+			n--;
+		}
+	}).fork();
+	while (n > 0) KThread.currentThread().yield();
+	System.out.println("---test2---");
+	n = 10;
+	C = new Communicator();
+	for (int i = 0; i < 5; i++)
+		new KThread(new Runnable(){
+		public void run(){
+			int a = random.nextInt();
+			System.out.println("speaker: "+a);
+			C.speak(a);
+			n--;
+		}
+		}).fork();
+	for (int i = 0; i < 5; i++)
+		new KThread(new Runnable(){
+		public void run(){
+			System.out.println("listener: "+C.listen());
+			n--;
+		}
+		}).fork();
+	while (n > 0) KThread.currentThread().yield();
+	System.out.println("---test3---");
+	n = 10;
+	C = new Communicator();
+	for (int i = 0; i < 5; i++){
+		new KThread(new Runnable(){
+		public void run(){
+			int a = random.nextInt();
+			System.out.println("speaker: "+a);
+			C.speak(a);
+			n--;
+		}
+		}).fork();
+		new KThread(new Runnable(){
+		public void run(){
+			System.out.println("listener: "+C.listen());
+			n--;
+		}
+		}).fork();
 
+	}
+	while (n > 0) KThread.currentThread().yield();
+	System.out.println("---test4---");
+	n = 2;
+	C = new Communicator();
+	new KThread(new Runnable(){
+		public void run(){
+			System.out.println("listener: "+C.listen());
+			n--;
+		}
+	}).fork();
+	new KThread(new Runnable(){
+		public void run(){
+			int a = random.nextInt();
+			System.out.println("speaker: "+a);
+			C.speak(a);
+			n--;
+		}
+	}).fork();
+	while (n > 0) KThread.currentThread().yield();
+	System.out.println("---test5---");
+	n = 10;
+	C = new Communicator();
+	for (int i = 0; i < 5; i++)
+		new KThread(new Runnable(){
+		public void run(){
+			System.out.println("listener: "+C.listen());
+			n--;
+		}
+		}).fork();
+	for (int i = 0; i < 5; i++)
+		new KThread(new Runnable(){
+		public void run(){
+			int a = random.nextInt();
+			System.out.println("speaker: "+a);
+			C.speak(a);
+			n--;
+		}
+		}).fork();
+	while (n > 0) KThread.currentThread().yield();
+	System.out.println("---test6---");
+	n = 10;
+	C = new Communicator();
+	for (int i = 0; i < 5; i++){
+		new KThread(new Runnable(){
+		public void run(){
+			System.out.println("listener: "+C.listen());
+			n--;
+		}
+		}).fork();
+		new KThread(new Runnable(){
+		public void run(){
+			int a = random.nextInt();
+			System.out.println("speaker: "+a);
+			C.speak(a);
+			n--;
+		}
+		}).fork();
+	}
+	while (n > 0) KThread.currentThread().yield();
+    }
     /**
      * Wait for a thread to listen through this communicator, and then transfer
      * <i>word</i> to the listener.
@@ -72,4 +192,7 @@ public class Communicator {
     Semaphore semaphore;
     Condition SpeakerCondition;
     Condition ListenerCondition;
+    public static Communicator C;
+    public static Random random = new Random();
+    public static int n;
 }
