@@ -16,6 +16,20 @@ public class Alarm {
      * <p><b>Note</b>: Nachos will not function correctly with more than one
      * alarm.
      */
+    public static void selfTest(){
+	System.out.println("---Alarm---");
+	System.out.println("---test1---");
+	Alarm alarm;
+	alarm = new Alarm();
+	System.out.println(Machine.timer().getTime());
+	alarm.waitUntil(50000000);
+	System.out.println(Machine.timer().getTime());	
+	System.out.println("---test2---");
+	System.out.println(Machine.timer().getTime());
+	new KThread(new KThread.PingTest(2)).fork();
+	alarm.waitUntil(50000000);
+	System.out.println(Machine.timer().getTime());		
+    }
     public Alarm() {
     WaitingThread=new TreeSet<Tuple>();
 	Machine.timer().setInterruptHandler(new Runnable() {
