@@ -389,9 +389,9 @@ public class PriorityScheduler extends Scheduler {
           System.out.println("** "+name+" begins");
 
 	  Random rng = new Random();
-
+	  boolean intStatus = Machine.interrupt().disable();
 	  ThreadedKernel.scheduler.setPriority(KThread.currentThread(),this.priority); 
-
+	  Machine.interrupt().restore(intStatus);
           while(amIDone == false) {
 
             for (int i=0; i < locks.length; i++) {
