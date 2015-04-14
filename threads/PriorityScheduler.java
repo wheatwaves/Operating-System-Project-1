@@ -154,13 +154,14 @@ public class PriorityScheduler extends Scheduler {
         if(this.holder!=null&&this.transferPriority){
             this.holder.Holding.remove(this);
             this.holder.setChange();
+            this.holder=null;
         }
         KThread t=pickNextThread().thread;
         if(t!=null){
             waitingQueue.remove(getThreadState(t));
+            this.holder=getThreadState(t);
             getThreadState(t).acquire(this);
-            //this.holder=getThreadState(t);
-            setChange();
+            changed=true;
         }
         return t;
 	}
@@ -183,7 +184,7 @@ public class PriorityScheduler extends Scheduler {
     public int getEffectivePriority(){
             if(!transferPriority)return 0;
             if(changed){
-                int m=-1;
+                int m=0;
                 for(Iterator<ThreadState> it=waitingQueue.iterator();it.hasNext();){
                     ThreadState t=it.next();
                     int n=t.getEffectivePriority();
@@ -263,7 +264,7 @@ public class PriorityScheduler extends Scheduler {
 	 * @return	the effective priority of the associated thread.
 	 */
 	public int getEffectivePriority() {
-        int max=effectPriority;
+        int max=priority;
 	    if(changed){
             for(Iterator<ThreadQueue> it=Holding.iterator();it.hasNext();){
                 PriorityQueue q=(PriorityQueue)it.next();
@@ -309,6 +310,7 @@ public class PriorityScheduler extends Scheduler {
         Waiting=waitQueue;
         if(Holding.indexOf(waitQueue)!=-1){
             Holding.remove(waitQueue);
+            this.setChange();
             waitQueue.holder=null;
         }
 	}
@@ -325,12 +327,11 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	public void acquire(PriorityQueue waitQueue) {
 	    Holding.add(waitQueue);
-        setChange();
         if(waitQueue== Waiting){
             waitQueue.waitingQueue.remove(this);
-            waitQueue.setChange();
             Waiting=null;
         }
+        setChange();
 	}
     public void setChange(){
         if(changed)return;
@@ -414,8 +415,8 @@ public class PriorityScheduler extends Scheduler {
               System.out.println(this.name+" has released "+
                                  locks[i].getName());
 	      KThread.yield();
-            }
-*/
+            }*/
+
 		KThread.yield();
             if (once) {
               break;
