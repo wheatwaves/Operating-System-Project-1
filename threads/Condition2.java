@@ -131,5 +131,5 @@ public class Condition2 {
     private static Lock lock;
     private static Condition2 CTest;
     private Lock conditionLock;
-    private ThreadQueue waitQueue = ThreadedKernel.scheduler.newThreadQueue(false);
+    private ThreadQueue waitQueue = ThreadedKernel.scheduler.newThreadQueue(true);
 }

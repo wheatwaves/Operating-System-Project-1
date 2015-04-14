@@ -348,7 +348,7 @@ public class PriorityScheduler extends Scheduler {
         public ThreadQueue Waiting;
         public boolean changed=false;
     }
-    private static class NamedLock extends Lock {
+	private static class NamedLock extends Lock {
       
 	public NamedLock(String name) {
 	  super();
@@ -392,7 +392,7 @@ public class PriorityScheduler extends Scheduler {
 	  ThreadedKernel.scheduler.setPriority(KThread.currentThread(),this.priority); 
 	  Machine.interrupt().restore(intStatus);
           while(amIDone == false) {
-/*
+
             for (int i=0; i < locks.length; i++) {
               System.out.println(this.name+" trying to acquire "+
                                  locks[i].getName());
@@ -415,9 +415,7 @@ public class PriorityScheduler extends Scheduler {
               System.out.println(this.name+" has released "+
                                  locks[i].getName());
 	      KThread.yield();
-            }*/
-
-		KThread.yield();
+            }
             if (once) {
               break;
             }
@@ -433,10 +431,7 @@ public class PriorityScheduler extends Scheduler {
 	private boolean amIDone;	
     }
     public static void selfTest(){
-	System.out.println("#### Priority Donation test #1 ####");
-        System.out.println("    This test succeeds if there is no deadlock. Note that due\n"+
-       		           "    to randomness, the test may succeed many times and then fails.\n"+
-       		           "    So you want to run it many, many times\n");
+	/*System.out.println("#### Priority Donation test #1 ####");
         NamedLock[] locks = new NamedLock[1];
 	locks[0] = new NamedLock("lock0");
         PriorityDonationWorker workerMi = 
@@ -444,10 +439,10 @@ public class PriorityScheduler extends Scheduler {
 		   			   false,6,new NamedLock[0]);
         PriorityDonationWorker workerLo = 
                 new PriorityDonationWorker("L-Priority",
-                                           false,2,locks);
+                                           false,7,locks);
         PriorityDonationWorker workerHi = 
                 new PriorityDonationWorker("H-Priority",
-                                           true,7,locks);
+                                           true,2,locks);
 
         KThread threadMi = new KThread(workerMi);
         threadMi.setName(workerMi.getName());
@@ -467,7 +462,6 @@ public class PriorityScheduler extends Scheduler {
         workerLo.terminate();
         threadLo.join();
 
-	System.out.println("#### Priority Donation test #1 ends ####\n");
+	System.out.println("#### Priority Donation test #1 ends ####\n");*/
     }
-
 }
