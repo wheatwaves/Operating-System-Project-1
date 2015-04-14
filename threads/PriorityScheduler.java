@@ -159,7 +159,7 @@ public class PriorityScheduler extends Scheduler {
         if(t!=null){
             waitingQueue.remove(getThreadState(t));
             getThreadState(t).acquire(this);
-            this.holder=getThreadState(t);
+            //this.holder=getThreadState(t);
             setChange();
         }
         return t;
@@ -387,13 +387,11 @@ public class PriorityScheduler extends Scheduler {
 	public void run() {
 
           System.out.println("** "+name+" begins");
-
-	  Random rng = new Random();
 	  boolean intStatus = Machine.interrupt().disable();
 	  ThreadedKernel.scheduler.setPriority(KThread.currentThread(),this.priority); 
 	  Machine.interrupt().restore(intStatus);
           while(amIDone == false) {
-
+/*
             for (int i=0; i < locks.length; i++) {
               System.out.println(this.name+" trying to acquire "+
                                  locks[i].getName());
@@ -417,7 +415,8 @@ public class PriorityScheduler extends Scheduler {
                                  locks[i].getName());
 	      KThread.yield();
             }
-
+*/
+		KThread.yield();
             if (once) {
               break;
             }
@@ -444,21 +443,21 @@ public class PriorityScheduler extends Scheduler {
 		   			   false,6,new NamedLock[0]);
         PriorityDonationWorker workerLo = 
                 new PriorityDonationWorker("L-Priority",
-                                           false,7,locks);
+                                           false,2,locks);
         PriorityDonationWorker workerHi = 
                 new PriorityDonationWorker("H-Priority",
-                                           true,2,locks);
+                                           true,7,locks);
 
         KThread threadMi = new KThread(workerMi);
         threadMi.setName(workerMi.getName());
         KThread threadLo = new KThread(workerLo);
         threadLo.setName(workerLo.getName());
         KThread threadHi = new KThread(workerHi);
-        threadHi.setName(workerHi.getName());;
+        threadHi.setName(workerHi.getName());
 	threadLo.fork();
-        ThreadedKernel.alarm.waitUntil(500);
+        new Alarm().waitUntil(500);
 	threadMi.fork();
-        ThreadedKernel.alarm.waitUntil(500);
+        new Alarm().waitUntil(500);
 	threadHi.fork();
         threadHi.join();
         workerMi.terminate();
