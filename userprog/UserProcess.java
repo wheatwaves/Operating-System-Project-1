@@ -57,7 +57,10 @@ public class UserProcess {
      */
     public boolean execute(String name, String[] args) {
 	if (!load(name, args))
-	    return false;
+	{
+		System.out.print("error in exexute");
+		return false;
+	}
 	
 	new UThread(this).setName(name).fork();
 
