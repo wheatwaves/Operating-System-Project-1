@@ -5,7 +5,7 @@ import nachos.threads.*;
 import nachos.userprog.*;
 import java.util.LinkedList;
 import java.io.EOFException;
-
+import java.util.*;
 /**
  * Encapsulates the state of a user process that is not contained in its
  * user thread (or threads). This includes its address translation state, a
@@ -62,7 +62,8 @@ public class UserProcess {
 		return false;
 	}
 	
-	new UThread(this).setName(name).fork();
+	thread = new UThread(this);
+	thread.setName(name).fork();
 
 	return true;
     }
@@ -305,7 +306,7 @@ public class UserProcess {
      */
     protected boolean loadSections() {
 	UserKernel.allocateMemoryLock.acquire();
-	if (numPages > Machine.processor().getNumPhysPages()) {
+	if (numPages > UserKernel.memoryLinkedList.size()) {
 	    coff.close();
 	    Lib.debug(dbgProcess, "\tinsufficient physical memory");
 	    UserKernel.allocateMemoryLock.release();
@@ -313,7 +314,7 @@ public class UserProcess {
 	}
 	pageTable = new TranslationEntry[numPages];
 	for (int i = 0; i < numPages; i++){
-		int nextPage = UserKernel.memoryLinkedList.get(i);
+		int nextPage = UserKernel.memoryLinkedList.remove();
 		pageTable[i] = new TranslationEntry(i,nextPage,true,false,false,false);
 	}
 	UserKernel.allocateMemoryLock.release();
@@ -339,6 +340,12 @@ public class UserProcess {
      * Release any resources allocated by <tt>loadSections()</tt>.
      */
     protected void unloadSections() {
+	UserKernel.allocateMemoryLock.acquire();
+	for (int i = 0; i < numPages; i++){
+		UserKernel.memoryLinkedList.add(pageTable[i].ppn);
+		pageTable[i]=null;
+	}
+	UserKernel.allocateMemoryLock.release();
     }    
 
     /**
@@ -397,11 +404,9 @@ public class UserProcess {
 			break;
 		}
 	}
-	if (process == null)
+	if (process == null || process.thread == null)
 		return -1;
-	process.lock.acquire();
-	process.condition.sleep();
-	process.lock.release();
+	process.thread.join();
 	byte[] byteArray = new byte[4];
 	Lib.bytesFromInt(byteArray,0,process.status);
 	int tt = writeVirtualMemory(statusAddress, byteArray);
@@ -418,15 +423,11 @@ public class UserProcess {
 		}
 	this.status = status;
 	normalExit = true;
-	if (parentProcess != null){
-		lock.acquire();
-		condition.wake();
-		lock.release();
-		parentProcess.childProcess.remove(this);
-	}
+	for (int i = 0; i < childProcess.size(); i++)
+		childProcess.get(i).parentProcess = null;
 	unloadSections();
-	KThread.finish();
 	if (numOfRunningProcess == 1) Machine.halt();
+	UThread.finish();
 	numOfRunningProcess--;
 	return 0;
     }
@@ -474,6 +475,7 @@ public class UserProcess {
         if(addr<0){return -1;}
         String name=readVirtualMemoryString(addr,256);
         if(name==null){return -1;}
+	if(unlink.containsKey(name)&&unlink.get(name)==true)return -1;
         int index=-1;
         for(int i=0;i<16;i++){
             if(fileDiscriptor[i]==null){
@@ -485,12 +487,16 @@ public class UserProcess {
         OpenFile file=ThreadedKernel.fileSystem.open(name, true);
         if(file==null) return -1;
         fileDiscriptor[index]=file;
+	if(fileCount.containsKey(name)){int count=fileCount.get(name);fileCount.put(name,count+1);}
+	else fileCount.put(name,1);
+	unlink.put(name,false);
         return index;
     }
     private int handleOpen(int addr){
         if(addr<0){return -1;}
         String name=readVirtualMemoryString(addr,256);
         if(name==null){return -1;}
+	if(unlink.containsKey(name)&&unlink.get(name)==true)return -1;
         int index=-1;
         for(int i=0;i<16;i++){
             if(fileDiscriptor[i]==null){
@@ -498,10 +504,16 @@ public class UserProcess {
                 break;
             }
         }
+	
         if(index==-1)return index;
         OpenFile file=ThreadedKernel.fileSystem.open(name, false);
         if(file==null) return -1;
         fileDiscriptor[index]=file;
+	if(fileCount.containsKey(name)){
+	int count=fileCount.get(name);
+	fileCount.put(name,count+1);
+	}
+	else {fileCount.put(name,1);unlink.put(name,false);}
         return index;
     }
     private int handleRead(int discriptor, int addr, int size){
@@ -528,26 +540,28 @@ public class UserProcess {
     private int handleClose(int discriptor){
         if(discriptor<0||discriptor>15||fileDiscriptor[discriptor]==null)return -1;
         OpenFile file= fileDiscriptor[discriptor];
+	String name = file.getName();
         file.close();
         fileDiscriptor[discriptor]=null;
+	int count=fileCount.get(name);
+	fileCount.put(name,count-1);
+	if(unlink.get(name)==true&&fileCount.get(name)==0){
+	if(!ThreadedKernel.fileSystem.remove(name))return -1;
+	return 0;
+	}
         return 0;
     }
     private int handleUnlink(int addr){
         if(addr<0)return -1;
         String name=readVirtualMemoryString(addr,256);
         if(name==null)return -1;
+	unlink.put(name,true);
         OpenFile file;
-        int index=-1;
-        for(int i=0;i<16;i++){
-            file=fileDiscriptor[i];
-            if(file!=null&&file.getName()==name){
-                index=i;
-                break;
-            }
-        }
-        if(index!=-1)return -1;
+   	if(fileCount.get(name)==0){
         if(!ThreadedKernel.fileSystem.remove(name))return -1;
         return 0;
+	}
+	return 0;
     }
     public int handleSyscall(int syscall, int a0, int a1, int a2, int a3) {
 	switch (syscall) {
@@ -636,6 +650,8 @@ public class UserProcess {
     public boolean normalExit=false;
     public int status=0;
     protected OpenFile stdin;
-
+    public UThread thread = null;
     protected OpenFile stdout;
+    protected static Hashtable<String,Integer> fileCount = new Hashtable<String,Integer>();
+    protected static Hashtable<String, Boolean> unlink = new Hashtable<String, Boolean>();
 }
