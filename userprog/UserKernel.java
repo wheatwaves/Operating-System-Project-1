@@ -29,7 +29,7 @@ public class UserKernel extends ThreadedKernel {
 	    });
 	memoryLinkedList = new LinkedList();
 	for (int i = 0; i < Machine.processor().getNumPhysPages(); i++){
-		memoryLinkedList.add(i);
+		memoryLinkedList.add((Integer)i);
 	}
 	allocateMemoryLock = new Lock();
     }

@@ -313,7 +313,7 @@ public class UserProcess {
 	}
 	pageTable = new TranslationEntry[numPages];
 	for (int i = 0; i < numPages; i++){
-		int nextPage = UserKernel.memoryLinkedList.remove();
+		int nextPage = UserKernel.memoryLinkedList.get(i);
 		pageTable[i] = new TranslationEntry(i,nextPage,true,false,false,false);
 	}
 	UserKernel.allocateMemoryLock.release();
@@ -375,18 +375,18 @@ public class UserProcess {
 	return 0;
     }
     private int handleExec(int fileAddress, int argc, int argvAddress){
-	String filename = readVirtualMemoryString(fileAddress, 128);
+	String filename = readVirtualMemoryString(fileAddress, 256);
 	String[] args = new String[argc];
 	for (int i = 0; i < argc; i++){
 		byte[] address = new byte[4];
 		readVirtualMemory(argvAddress+i*4, address);
-		args[i] = readVirtualMemoryString(Lib.bytesToInt(address,0), 128);
+		args[i] = readVirtualMemoryString(Lib.bytesToInt(address,0), 256);
 	}
 	UserProcess process = UserProcess.newUserProcess();
-	if (!process.execute(filename, args))
-		return -1;
 	process.parentProcess = this;
 	childProcess.add(process);
+	if (!process.execute(filename, args))
+		return -1;
 	return process.pid;
     }
     private int handleJoin(int pid, int statusAddress){
