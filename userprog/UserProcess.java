@@ -483,7 +483,6 @@ public class UserProcess {
                 break;
             }
         }
-	System.out.print(name);	
         if(index==-1)return index;
         OpenFile file=ThreadedKernel.fileSystem.open(name, true);
         if(file==null){ return -1;}
@@ -548,6 +547,7 @@ public class UserProcess {
 	int count=fileCount.get(name);
 	fileCount.put(name,count-1);
 	if(unlink.get(name)==true&&fileCount.get(name)==0){
+	
 	if(!ThreadedKernel.fileSystem.remove(name))return -1;
 	return 0;
 	}
