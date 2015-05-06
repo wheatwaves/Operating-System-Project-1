@@ -27,8 +27,8 @@ public class UserProcess {
 	int numPhysPages = Machine.processor().getNumPhysPages();
 	pid=numOfProcess++;
 	numOfRunningProcess++;
-	fileDiscriptor=new OpenFile[16];
-	  stdin = UserKernel.console.openForReading();
+	for(int i=0;i<16;i++)fileDiscriptor[i]=null;
+	stdin = UserKernel.console.openForReading();
         stdout = UserKernel.console.openForWriting();
         fileDiscriptor[0]=stdin;
         fileDiscriptor[1]=stdout;
@@ -483,12 +483,14 @@ public class UserProcess {
                 break;
             }
         }
+	System.out.print(name);	
         if(index==-1)return index;
         OpenFile file=ThreadedKernel.fileSystem.open(name, true);
-        if(file==null) return -1;
+        if(file==null){ return -1;}
         fileDiscriptor[index]=file;
 	if(fileCount.containsKey(name)){int count=fileCount.get(name);fileCount.put(name,count+1);}
-	else fileCount.put(name,1);
+	else 
+	fileCount.put(name,1);
 	unlink.put(name,false);
         return index;
     }
